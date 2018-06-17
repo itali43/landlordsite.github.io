@@ -11,6 +11,9 @@ var isChrome = function () {
     return false;
 };
 
+
+
+
 var randomCode = function (len) {
     var d,
         e,
