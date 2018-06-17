@@ -1,0 +1,269 @@
+<!doctype>
+<html>
+<head>
+  <script type="text/javascript" src="../dist/nebPay.js"></script>
+    <script type="text/javascript">
+//&quot; " in HTML
+        // console.log("this is require", require);
+        var NebPay = require("nebpay");
+        var nebPay = new NebPay();
+        var serialNumber;
+        var callbackUrl = NebPay.config.mainnetUrl;
+        // var callbackUrl = NebPay.config.testnetUrl;
+        function onPayClick() {
+            var to = document.getElementById("to").value;
+            var value = document.getElementById("value").value;
+            serialNumber = nebPay.pay(to, value, {
+                qrcode: {
+                    showQRCode: true
+                },
+                goods: {
+                    name: "test",
+                    desc: "test goods"
+                },
+                callback:callbackUrl,
+                listener: listener  //set listener for extension transaction result
+            });
+            setTimeout(() => {
+                onrefreshClick();   //search transaction result from server (result upload to server by app)
+            }, 1000);
+        }
+        function onNrc20PayClick() {
+            var to = document.getElementById("nrc20to").value;
+            var value = document.getElementById("nrc20value").value;
+            serialNumber = nebPay.nrc20pay("NRC", to, value, {
+                qrcode: {
+                    showQRCode: true
+                },
+                goods: {
+                    name: "test",
+                    desc: "test goods"
+                },
+                nrc20: {
+                    contractAddress: "",
+                    name: "demoToken",
+                    symbol: "NRC",
+                    decimals: 18
+                },
+                callback:callbackUrl,
+            });
+            setTimeout(() => {
+                onrefreshClick();
+            }, 1000);
+        }
+        function onDeployClick() {
+            var sourceType = document.getElementById("sourceType").value;
+            var source = document.getElementById("source").value;
+            var args = document.getElementById("deployArgs").value;
+            serialNumber = nebPay.deploy(source, sourceType, args, {
+                goods: {
+                    name: "test",
+                    desc: "test goods"
+                }
+            });
+            setTimeout(() => {
+                onrefreshClick();
+            }, 1000);
+        }
+        function onCallClickREG() {
+            var to = "n1yTdckEvu2GngUCvzWdj4fF8s8W9Eav4BZ";
+            var value = "0";
+            var callFunction = "register";
+            var argumentGiven = "[\"" + document.getElementById("callArgs").value + "\"]"
+            var callArgs = argumentGiven;
+            serialNumber = nebPay.call(to, value, callFunction, callArgs, {
+                qrcode: {
+                    showQRCode: true
+                },
+                goods: {
+                    name: "test",
+                    desc: "test goods"
+                },
+                callback:callbackUrl,
+                listener: listener  //set listener for extension transaction result
+            });
+            setTimeout(() => {
+                onrefreshClick();
+            }, 1000);
+        }
+        function onCallClickTOKENS() {
+            var to = "n1yTdckEvu2GngUCvzWdj4fF8s8W9Eav4BZ"; // landlord contract address
+            var value = document.getElementById("callValue").value;
+            var callFunction = "tokens";
+            var callArgs = document.getElementById("callArgs").value;
+            serialNumber = nebPay.call(to, value, callFunction, callArgs, {
+                qrcode: {
+                    showQRCode: true
+                },
+                goods: {
+                    name: "test",
+                    desc: "test goods"
+                },
+                callback:callbackUrl,
+                listener: listener  //set listener for extension transaction result
+            });
+            setTimeout(() => {
+                onrefreshClick();
+            }, 1000);
+        }
+
+// shows any registered addresses
+        function onSimulateCallClick() {
+            var to = "n1yTdckEvu2GngUCvzWdj4fF8s8W9Eav4BZ";
+            var value = "0";
+            var callFunction = "tokens";
+            var callArgs = "";
+            nebPay.simulateCall(to, value, callFunction, callArgs, {
+                qrcode: {
+                    showQRCode: false
+                },
+                goods: {
+                    name: "test",
+                    desc: "test goods"
+                },
+                //callback:callbackUrl, //don't need to set callback for simulateCall
+                // console.log(listener)
+                listener: listener  //set listener for extension transaction result
+            });
+            // document.getElementById('result').value = `app does not support simulateCall !`;
+        }
+        function onrefreshClick() {
+            console.log("It's refreshing")
+            nebPay.queryPayInfo(serialNumber,{callback: callbackUrl})   //search transaction result from server (result upload to server by app)
+            .then(function (resp) {
+                document.getElementById('result').value = resp;
+            })
+            .catch(function (err) {
+                console.log(err);
+            });
+        }
+        function listener(resp) {
+          // jsonparse the response and then send to textfield
+          let text = ""
+          let jsonStr = JSON.stringify(resp)
+          let jsonDe = JSON.parse(jsonStr)
+            console.log("resp::: " + JSON.stringify(resp))
+            // console.log(jsonDe);
+          let josnR = JSON.parse(jsonDe.result)
+          // console.log(josnR)
+          // console.log(josnR[0].payto);
+          // console.log(josnR[0].address);
+          var i;
+          for (i = 0; i < josnR.length; i++) {
+              text += "Landlord of: " + josnR[i].address  + "\n" + "can be paid here: " + josnR[i].payto + "\n\n";
+          }
+          console.log("text below");
+          console.log(text);
+
+
+            document.getElementById("resultFromExtension").value = text
+        }
+        function selectMainnet () {
+            callbackUrl = NebPay.config.mainnetUrl;
+            console.log("Mainnet selected: " + callbackUrl)
+        }
+        function selectTestnet () {
+            callbackUrl = NebPay.config.testnetUrl;
+            console.log("Testnet selected: " + callbackUrl)
+        }
+    </script>
+    <style>
+        textarea {
+            width: 400px;
+            height: 100px;
+        }
+    </style>
+</head>
+<body>
+<h1>Landlord NAS</h1>
+
+<div>
+    <label>Welcome to LandlordNAS, where you can register a Nebulas address to a physical address, allowing your tennants to pay you!</label>
+    <br>
+</div>
+<h5></h5>
+<div>
+    <div><h4>Register as a Landlord</h4></div>
+    <div>Please enter the physical address you would like to Register
+      <b>IN THE PROPER FORMAT SHOWN IN PLACEHOLDER!</b>.
+      <br>Whatever address you pay with will become your registered NAS address:
+    </div>
+    <h5></h5>
+    <div style="display: inline-block">
+        <div>Physical Address to Register:</div>
+        <input type="text" id="callArgs" placeholder="Ex: 123 Fake St, SF, CA, USA"/>
+    </div>
+
+    <button type="button" onClick="onCallClickREG();">Register physical address on LandlordNAS!!</button>
+</div>
+<h5></h5>
+
+
+<!-- <div>
+    <div>See Landlords Registered</div>
+    <h5></h5>
+
+
+    <div style="display: inline-block">
+        <div>to:</div>
+        <input type="text" id="callTo" placeholder="contract address"/>
+    </div>
+
+    <div style="display: inline-block">
+        <div>value:</div>
+        <input type="text" id="callValue" placeholder="value"/>
+    </div>
+    <div style="display: inline-block">
+        <div>function:</div>
+        <input type="text" id="callFunction" placeholder="function name"/>
+    </div>
+    <div style="display: inline-block">
+        <div>args:</div>
+        <input type="text" id="callArgs" placeholder="call args"/>
+    </div>
+    <button type="button" onClick="onCallClickTOKENS();">pay</button>
+</div> -->
+<h5></h5>
+
+<div>
+  <br>
+  <div><h4>See Landlords Registered</h4></div>
+
+    <div>Press to see current landlords addresses that have already registered:</div>
+        <h5></h5>
+        <div>
+            <!-- <div>(only supported by extension)</div> -->
+
+            <!-- <div style="display: inline-block">
+                <div>to:</div>
+                <input type="text" id="simulateCallTo" placeholder="contract address"/>
+            </div> -->
+
+            <!-- <div style="display: inline-block">
+                <div>value:</div>
+                <input type="text" id="simulateCallValue" placeholder="value"/>
+            </div> -->
+            <!-- <div style="display: inline-block">
+                <div>function:</div>
+                <input type="text" id="simulateCallFunction" placeholder="tokens"/>
+            </div> -->
+            <!-- <div style="display: inline-block">
+                <div>args:</div>
+                <input type="text" id="simulateCallArgs" placeholder="call args"/>
+            </div> -->
+            <button type="button" onClick="onSimulateCallClick();">See list of Landlord NAS Addresses</button>
+        </div>
+        <h5></h5>
+    <!-- <textarea id="result" readonly="readonly"></textarea> -->
+    <!-- <button type="button" onClick="onrefreshClick();">refresh</button> -->
+
+    <!-- <div>pay result listened directly from extension:</div>
+    <textarea id="resultFromExtension" readonly="readonly"></textarea> -->
+    <div>Landlord Addresses registered with LandlordNAS:</div>
+    <textarea id="resultFromExtension" readonly="readonly"></textarea>
+</div>
+
+</div>
+
+</body>
+</html>
