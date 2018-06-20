@@ -2,3 +2,7 @@
 Add your custom styles below
 ****************************/
 
+.largetextarea {
+  width: 70%;
+  height: 1000px;
+}
